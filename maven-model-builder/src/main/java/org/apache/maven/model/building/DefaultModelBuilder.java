@@ -117,7 +117,7 @@ public class DefaultModelBuilder
 
     @Inject
     private ModelUrlNormalizer modelUrlNormalizer;
-    
+
     @Inject
     private SuperPomProvider superPomProvider;
 
@@ -151,7 +151,7 @@ public class DefaultModelBuilder
 
     @Inject
     private ReportingConverter reportingConverter;
-    
+
     private ModelMerger modelMerger = new FileToRawModelMerger();
 
     public DefaultModelBuilder setModelProcessor( ModelProcessor modelProcessor )
@@ -255,7 +255,7 @@ public class DefaultModelBuilder
         this.reportingConverter = reportingConverter;
         return this;
     }
-    
+
     @SuppressWarnings( "checkstyle:methodlength" )
     @Override
     public ModelBuildingResult build( ModelBuildingRequest request )
@@ -419,9 +419,6 @@ public class DefaultModelBuilder
         // url normalization
         modelUrlNormalizer.normalize( resultModel, request );
 
-        // Now the fully interpolated model is available: reconfigure the resolver
-        configureResolver( request.getModelResolver(), resultModel, problems, true );
-
         resultData.setGroupId( resultModel.getGroupId() );
         resultData.setArtifactId( resultModel.getArtifactId() );
         resultData.setVersion( resultModel.getVersion() );
@@ -437,7 +434,7 @@ public class DefaultModelBuilder
         }
 
         result.setEffectiveModel( resultModel );
-        
+
         for ( ModelData currentData : lineage )
         {
             String modelId = ( currentData != superData ) ? currentData.getId() : "";
@@ -571,7 +568,7 @@ public class DefaultModelBuilder
             options.put( ModelProcessor.SOURCE, modelSource );
 
             InputSource source;
-            if ( request.isLocationTracking() ) 
+            if ( request.isLocationTracking() )
             {
                 source = (InputSource) options.computeIfAbsent( ModelProcessor.INPUT_SOURCE, k -> new InputSource() );
             }
@@ -661,7 +658,7 @@ public class DefaultModelBuilder
 
         modelValidator.validateFileModel( model, request, problems );
         request.setFileModel( model );
-        
+
         if ( Features.buildConsumer().isActive() && pomFile != null )
         {
             try
@@ -671,10 +668,10 @@ public class DefaultModelBuilder
                                Collections.singletonMap( "transformerContext", request.getTransformerContext() ) );
 
                 model.setPomFile( pomFile );
-                
+
                 // model with locationTrackers, required for proper feedback during validations
                 model = request.getFileModel().clone();
-                
+
                 // Apply enriched data
                 modelMerger.merge( model, rawModel, false, null );
             }
@@ -719,7 +716,7 @@ public class DefaultModelBuilder
             {
                 model = modelData.getModel();
             }
-            else 
+            else
             {
                 model = null;
             }
@@ -727,7 +724,7 @@ public class DefaultModelBuilder
         else
         {
             model = fromCache( cache, modelSource, ModelCacheTag.FILEMODEL );
-            
+
             if ( model != null )
             {
                 model = model.clone();
@@ -746,13 +743,13 @@ public class DefaultModelBuilder
         return groupId;
     }
 
-    private String getVersion( Model model ) 
+    private String getVersion( Model model )
     {
         String version = model.getVersion();
         if ( version == null && model.getParent() != null )
         {
             version = model.getParent().getVersion();
-        } 
+        }
         return version;
     }
 
@@ -771,12 +768,6 @@ public class DefaultModelBuilder
 
     private void configureResolver( ModelResolver modelResolver, Model model, DefaultModelProblemCollector problems )
     {
-        configureResolver( modelResolver, model, problems, false );
-    }
-
-    private void configureResolver( ModelResolver modelResolver, Model model, DefaultModelProblemCollector problems,
-                                    boolean replaceRepositories )
-    {
         if ( modelResolver == null )
         {
             return;
@@ -790,7 +781,7 @@ public class DefaultModelBuilder
         {
             try
             {
-                modelResolver.addRepository( repository, replaceRepositories );
+                modelResolver.addRepository( repository, false );
             }
             catch ( InvalidRepositoryException e )
             {
@@ -934,7 +925,7 @@ public class DefaultModelBuilder
                 problems.add( mpcr );
             }
 
-            
+
         }
         interpolatedModel.setPomFile( model.getPomFile() );
 
@@ -963,9 +954,9 @@ public class DefaultModelBuilder
                 if ( candidateData != null )
                 {
                     /*
-                     * NOTE: This is a sanity check of the cache hit. If the cached parent POM was locally resolved, 
+                     * NOTE: This is a sanity check of the cache hit. If the cached parent POM was locally resolved,
                      * the child's GAV should match with that parent, too. If it doesn't, we ignore the cache and
-                     * resolve externally, to mimic the behavior if the cache didn't exist in the first place. 
+                     * resolve externally, to mimic the behavior if the cache didn't exist in the first place.
                      * Otherwise, the cache would obscure a bad POM.
                      */
                     try
@@ -989,11 +980,11 @@ public class DefaultModelBuilder
 
             if ( parentData == null )
             {
-                ModelData candidateData = fromCache( request.getModelCache(), 
+                ModelData candidateData = fromCache( request.getModelCache(),
                                                      parent.getGroupId(), parent.getArtifactId(),
                                                      parent.getVersion(), ModelCacheTag.RAW );
 
-                
+
                 if ( candidateData != null && candidateData.getSource() instanceof ArtifactModelSource )
                 {
                     // ArtifactModelSource means repositorySource
@@ -1002,14 +993,14 @@ public class DefaultModelBuilder
                 else
                 {
                     parentData = readParentExternally( childModel, request, problems );
-                    
-                    intoCache( request.getModelCache(), 
+
+                    intoCache( request.getModelCache(),
                               parentData.getGroupId(), parentData.getArtifactId(),
                               parentData.getVersion(), ModelCacheTag.RAW, parentData );
                 }
             }
-            
-            if ( parentData != null ) 
+
+            if ( parentData != null )
             {
                 Model parentModel = parentData.getModel();
 
@@ -1558,8 +1549,8 @@ public class DefaultModelBuilder
 
     /**
      * As long as Maven controls the BuildPomXMLFilter, the entities that need merging are known.
-     * All others can simply be copied from source to target to restore the locationTracker 
-     * 
+     * All others can simply be copied from source to target to restore the locationTracker
+     *
      * @author Robert Scholte
      * @since 4.0.0
      */
@@ -1571,7 +1562,7 @@ public class DefaultModelBuilder
         {
             // don't merge
         }
-        
+
 
         @Override
         protected void mergeBuildBase_Resources( BuildBase target, BuildBase source, boolean sourceDominant,
@@ -1579,21 +1570,21 @@ public class DefaultModelBuilder
         {
             // don't merge
         }
-        
+
         @Override
         protected void mergeBuildBase_TestResources( BuildBase target, BuildBase source, boolean sourceDominant,
                                                      Map<Object, Object> context )
         {
             // don't merge
         }
-        
+
         @Override
         protected void mergeCiManagement_Notifiers( CiManagement target, CiManagement source, boolean sourceDominant,
                                                     Map<Object, Object> context )
         {
             // don't merge
         }
-        
+
         @Override
         protected void mergeDependencyManagement_Dependencies( DependencyManagement target, DependencyManagement source,
                                                                boolean sourceDominant, Map<Object, Object> context )
@@ -1602,14 +1593,14 @@ public class DefaultModelBuilder
             target.getDependencies().stream().forEach( t -> mergeDependency( t, sourceIterator.next(), sourceDominant,
                                                                              context ) );
         }
-        
+
         @Override
         protected void mergeDependency_Exclusions( Dependency target, Dependency source, boolean sourceDominant,
                                                    Map<Object, Object> context )
         {
             // don't merge
         }
-        
+
         @Override
         protected void mergeModel_Contributors( Model target, Model source, boolean sourceDominant,
                                                 Map<Object, Object> context )
@@ -1623,21 +1614,21 @@ public class DefaultModelBuilder
         {
             // don't merge
         }
-        
+
         @Override
         protected void mergeModel_Licenses( Model target, Model source, boolean sourceDominant,
                                             Map<Object, Object> context )
         {
             // don't merge
         }
-        
+
         @Override
         protected void mergeModel_MailingLists( Model target, Model source, boolean sourceDominant,
                                                 Map<Object, Object> context )
         {
             // don't merge
         }
-        
+
         @Override
         protected void mergeModel_Profiles( Model target, Model source, boolean sourceDominant,
                                             Map<Object, Object> context )
@@ -1646,7 +1637,7 @@ public class DefaultModelBuilder
             target.getProfiles().stream().forEach( t -> mergeProfile( t, sourceIterator.next(), sourceDominant,
                                                                       context ) );
         }
-        
+
         @Override
         protected void mergeModelBase_Dependencies( ModelBase target, ModelBase source, boolean sourceDominant,
                                                     Map<Object, Object> context )
@@ -1655,21 +1646,21 @@ public class DefaultModelBuilder
             target.getDependencies().stream().forEach( t -> mergeDependency( t, sourceIterator.next(), sourceDominant,
                                                                              context ) );
         }
-        
+
         @Override
         protected void mergeModelBase_PluginRepositories( ModelBase target, ModelBase source, boolean sourceDominant,
                                                           Map<Object, Object> context )
         {
             target.setPluginRepositories( source.getPluginRepositories() );
         }
-        
+
         @Override
         protected void mergeModelBase_Repositories( ModelBase target, ModelBase source, boolean sourceDominant,
                                                     Map<Object, Object> context )
         {
             // don't merge
         }
-        
+
         @Override
         protected void mergePlugin_Dependencies( Plugin target, Plugin source, boolean sourceDominant,
                                                  Map<Object, Object> context )
@@ -1678,14 +1669,14 @@ public class DefaultModelBuilder
             target.getDependencies().stream().forEach( t -> mergeDependency( t, sourceIterator.next(), sourceDominant,
                                                                              context ) );
         }
-        
+
         @Override
         protected void mergePlugin_Executions( Plugin target, Plugin source, boolean sourceDominant,
                                                Map<Object, Object> context )
         {
             // don't merge
         }
-        
+
         @Override
         protected void mergeReporting_Plugins( Reporting target, Reporting source, boolean sourceDominant,
                                                Map<Object, Object> context )
@@ -1699,7 +1690,7 @@ public class DefaultModelBuilder
         {
             // don't merge
         }
-        
+
         @Override
         protected void mergePluginContainer_Plugins( PluginContainer target, PluginContainer source,
                                                      boolean sourceDominant, Map<Object, Object> context )
